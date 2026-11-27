@@ -485,8 +485,8 @@
     if (window.__SPOOF_GEMINI_KEY) {
       try {
         const prompt = options.length > 0
-          ? `Bạn là trợ lý kiểm tra bảo mật web. Trả lời câu hỏi sau, chỉ ghi đúng 1 ký tự đáp án (A, B, C, hoặc D) ở đầu tiên, sau đó giải thích ngắn:\n\nCâu hỏi: ${question}\n\nĐáp án:\n${options.map((o, i) => `${String.fromCharCode(65 + i)}. ${o}`).join('\n')}`
-          : `Trả lời ngắn gọn câu hỏi sau:\n\n${question}`;
+          ? `Bạn là trợ lý kiểm thử bảo mật web. Hãy trả lời **CHỈ** một ký tự duy nhất: A, B, C hoặc D. Không có bất kỳ ký tự, dấu cách hoặc giải thích nào khác.\n\nCâu hỏi: ${question}\n\nLựa chọn:\n${options.map((o, i) => `${String.fromCharCode(65 + i)}. ${o}`).join('\n')}`
+          : `Bạn là trợ lý kiểm thử bảo mật web. Hãy trả lời **CHỈ** một ký tự duy nhất (A, B, C hoặc D) cho câu hỏi sau.\n\n${question}`;
 
         const res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${window.__SPOOF_GEMINI_KEY}`,
