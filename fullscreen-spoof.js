@@ -65,9 +65,9 @@
   Element.prototype.requestPointerLock = function () { document.dispatchEvent(new Event('pointerlockchange')); };
   Object.defineProperty(document, 'pointerLockElement', { get: () => document.documentElement, configurable: true });
 
-  const fakeFullscreenCSS = document.createElement('style');
-  fakeFullscreenCSS.textContent = `html { position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 2147483646 !important; }`;
-  document.head.appendChild(fakeFullscreenCSS);
+  // 1g. Không khóa position fixed vào html/body vì sẽ gây đơ cuộn chuột (scroll)
+  // Chỉ tạo overlay ẩn hoặc kích hoạt fullscreen event
+
 
   setTimeout(() => {
     document.dispatchEvent(new Event('fullscreenchange'));
@@ -269,61 +269,77 @@
       '[data-question]', '[role="heading"]',
       '.formulation', '.qtext', '.prompt', '.stem',
       '.question_text', '.question-stem',
-      'h2', 'h3', 'h4', 'legend', 'p',
+      '.content', '.title', 'h1', 'h2', 'h3', 'h4', 'legend', 'p', 'div'
     ];
 
     let bestQuestion = null, bestScore = 0, questionOptions = [];
 
+    // Tìm xem trang có cấu trúc trắc nghiệm rõ ràng không
     for (const sel of selectors) {
       try {
         for (const el of document.querySelectorAll(sel)) {
           const text = el.innerText?.trim();
-          if (!text || text.length < 10 || text.length > 2000) continue;
+          if (!text || text.length < 5 || text.length > 2000) continue;
           if (el.closest('#__spoof_panel')) continue;
 
           let score = 0;
           if (text.includes('?')) score += 5;
-          if (/^(câu|question|q\s*\d|bài|đề)/i.test(text)) score += 4;
-          if (/what|which|how|why|when|where|who|là gì|nào|hãy|chọn/i.test(text)) score += 3;
+          if (/^(câu|question|q\s*\d|bài|đề|\d+[.:])/i.test(text)) score += 5;
+          if (/what|which|how|why|when|where|who|là gì|nào|hãy|chọn|đúng|sai/i.test(text)) score += 3;
           if (sel.includes('question')) score += 3;
-          if (text.length > 20 && text.length < 500) score += 2;
+          if (text.length > 15 && text.length < 400) score += 2;
 
           if (score > bestScore) {
-            bestScore = score;
-            bestQuestion = text;
-            questionOptions = [];
-            realOptionEls = [];
+            // Tìm container chứa câu hỏi và các đáp án
+            const container = el.closest('.question, .quiz-item, .item, .formulation, [class*="question"], form, fieldset, section, li') || el.parentElement?.parentElement || el.parentElement;
+            
+            let foundOpts = [];
+            let foundRealEls = [];
 
-            const parent = el.closest('.question, .formulation, [class*="question"], form, fieldset') || el.parentElement;
-            if (parent) {
-              // Tìm cả input radio/checkbox kèm label
-              const radioInputs = parent.querySelectorAll('input[type="radio"], input[type="checkbox"]');
-              if (radioInputs.length > 0) {
+            if (container) {
+              // 1. Tìm các input radio / checkbox
+              const radioInputs = container.querySelectorAll('input[type="radio"], input[type="checkbox"]');
+              if (radioInputs.length >= 2) {
                 radioInputs.forEach(inp => {
                   if (inp.closest('#__spoof_panel')) return;
                   const label = inp.closest('label') ||
-                    parent.querySelector(`label[for="${inp.id}"]`) ||
-                    inp.nextElementSibling;
+                    container.querySelector(`label[for="${inp.id}"]`) ||
+                    inp.nextElementSibling ||
+                    inp.parentElement;
                   const t = label?.innerText?.trim() || inp.value?.trim() || '';
                   if (t) {
-                    questionOptions.push(t);
-                    realOptionEls.push({ input: inp, label });
-                  }
-                });
-              } else {
-                // Fallback: tìm các element dạng đáp án
-                const optEls = parent.querySelectorAll(
-                  '.answer, .option, [class*="answer"], [class*="option"], .choice, li, .radio label, .checkbox label'
-                );
-                optEls.forEach(opt => {
-                  if (opt.closest('#__spoof_panel')) return;
-                  const t = opt.innerText?.trim();
-                  if (t && t.length < 500) {
-                    questionOptions.push(t);
-                    realOptionEls.push({ input: null, label: opt });
+                    foundOpts.push(t);
+                    foundRealEls.push({ input: inp, label: label || inp });
                   }
                 });
               }
+
+              // 2. Nếu không có radio inputs, tìm elements dạng nút/danh sách đáp án A, B, C, D
+              if (foundOpts.length < 2) {
+                const optEls = container.querySelectorAll(
+                  '.answer, .option, [class*="answer"], [class*="option"], [class*="choice"], button, li, [role="button"]'
+                );
+                optEls.forEach(opt => {
+                  if (opt.closest('#__spoof_panel') || opt === el) return;
+                  const t = opt.innerText?.trim();
+                  if (t && t.length > 0 && t.length < 300) {
+                    // Tránh gom nhầm nút submit/next
+                    if (!/^(nộp|submit|tiếp|next|quay lại|prev|xác nhận)/i.test(t)) {
+                      foundOpts.push(t);
+                      foundRealEls.push({ input: null, label: opt });
+                    }
+                  }
+                });
+              }
+            }
+
+            if (foundOpts.length >= 2) score += 5;
+
+            if (score > bestScore) {
+              bestScore = score;
+              bestQuestion = text;
+              questionOptions = foundOpts;
+              realOptionEls = foundRealEls;
             }
           }
         }
