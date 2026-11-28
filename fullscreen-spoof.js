@@ -485,20 +485,21 @@
     if (window.__SPOOF_GEMINI_KEY) {
       try {
         const prompt = options.length > 0
-          ? `Bạn là trợ lý kiểm thử bảo mật web. Hãy trả lời **CHỈ** một ký tự duy nhất: A, B, C hoặc D. Không có bất kỳ ký tự, dấu cách hoặc giải thích nào khác.\n\nCâu hỏi: ${question}\n\nLựa chọn:\n${options.map((o, i) => `${String.fromCharCode(65 + i)}. ${o}`).join('\n')}`
-          : `Bạn là trợ lý kiểm thử bảo mật web. Hãy trả lời **CHỈ** một ký tự duy nhất (A, B, C hoặc D) cho câu hỏi sau.\n\n${question}`;
+          ? `Hãy trả lời **CHỈ** một ký tự duy nhất: A, B, C hoặc D. Không có bất kỳ ký tự, dấu cách hoặc giải thích nào khác.\n\nCâu hỏi: ${question}\n\nLựa chọn:\n${options.map((o, i) => `${String.fromCharCode(65 + i)}. ${o}`).join('\n')}`
+          : `Hãy trả lời **CHỈ** một ký tự duy nhất (A, B, C hoặc D) cho câu hỏi sau.\n\n${question}`;
 
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${window.__SPOOF_GEMINI_KEY}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: { temperature: 0.1, maxOutputTokens: 500 },
-            }),
-          }
-        );
+const res = await fetch(
+  `https://googleapis.com{window.__SPOOF_GEMINI_KEY}`,
+  {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.1, maxOutputTokens: 500 },
+    }),
+  }
+);
+
         const data = await res.json();
         const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Không có kết quả';
 
