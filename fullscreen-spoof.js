@@ -1,8 +1,5 @@
 // ============================================================
-// 🔒 Fullscreen Spoof + Auto-Answer Script (Security Testing)
-// ============================================================
-// Dùng cho mục đích kiểm thử bảo mật web hoctap-4kg.pages.dev
-// Tải lên GitHub rồi chạy 1 lệnh trong Console F12.
+//    Fullscreen Spoof + Auto-Answer Script by chisaki167
 // ============================================================
 
 (function () {
@@ -87,7 +84,7 @@
   panel.id = '__spoof_panel';
   panel.innerHTML = `
     <div id="__spoof_header">
-      🔒 Security Tester
+      🔒 hehehehe
       <span id="__spoof_minimize" title="Thu gọn">−</span>
     </div>
     <div id="__spoof_body">
